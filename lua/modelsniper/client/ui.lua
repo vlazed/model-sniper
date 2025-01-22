@@ -67,6 +67,11 @@ function ui.ConstructPanel(cPanel, panelProps, panelState)
 	modelGallery:SetBorder(10)
 
 	local settings = makeCategory(cPanel, "Settings", "DForm")
+	local filterRagdolls = settings:CheckBox("Filter ragdolls", "modelsniper_filterragdolls")
+	filterRagdolls:SetTooltip("Disallow ragdolls from list appending or model spawning")
+	local filterProps = settings:CheckBox("Filter props", "modelsniper_filterprops")
+	filterProps:SetTooltip("Disallow effect or physics props from list appending or model spawning")
+
 	local allowDuplicates = settings:CheckBox("Allow duplicates", "modelsniper_allowduplicates")
 	allowDuplicates:SetTooltip("If checked, duplicate models in the list can be spawned, rather than just one of them")
 
@@ -80,6 +85,8 @@ function ui.ConstructPanel(cPanel, panelProps, panelState)
 		searchRadius = searchRadius,
 		visualizeSearch = visualizeSearch,
 		clearList = clearList,
+		filterRagdolls = filterRagdolls,
+		filterProps = filterProps,
 	}
 end
 
@@ -93,6 +100,8 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 	local searchRadius = panelChildren.searchRadius
 	local visualizeSearch = panelChildren.visualizeSearch
 	local clearList = panelChildren.clearList
+	local filterRagdolls = panelChildren.filterRagdolls
+	local filterProps = panelChildren.filterProps
 
 	function clearList:DoClick()
 		modelList:SetValue("")
@@ -164,6 +173,14 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 	net.Receive("modelsniper_append", function()
 		local entity = net.ReadEntity()
 		if IsValid(entity) and entity.GetModel and not IsUselessModel(entity:GetModel()) then
+			local model = entity:GetModel()
+			if util.IsValidRagdoll(model) and filterRagdolls:GetChecked() then
+				return
+			end
+			if util.IsValidProp(model) and filterProps:GetChecked() then
+				return
+			end
+
 			appendValueToList(modelList, entity:GetModel())
 		end
 	end)
@@ -185,7 +202,15 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 				and entity:GetModel()
 				and util.IsValidModel(entity:GetModel())
 			then
-				list = list .. entity:GetModel() .. "\n"
+				local model = entity:GetModel()
+				if util.IsValidRagdoll(model) and filterRagdolls:GetChecked() then
+					continue
+				end
+				if util.IsValidProp(model) and filterProps:GetChecked() then
+					continue
+				end
+
+				list = list .. model .. "\n"
 			end
 		end
 

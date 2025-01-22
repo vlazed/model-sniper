@@ -5,6 +5,8 @@ TOOL.ConfigName = ""
 
 TOOL.ClientConVar["allowduplicates"] = 0
 TOOL.ClientConVar["searchradius"] = 30
+TOOL.ClientConVar["filterragdolls"] = 0
+TOOL.ClientConVar["filterprops"] = 0
 
 local shouldRebuild = true
 function TOOL:Think()
@@ -25,6 +27,13 @@ function TOOL:LeftClick(tr)
 
 	local modelList = string.Split(models, "\n")
 	for _, model in ipairs(modelList) do
+		if util.IsValidRagdoll(model) and self:GetClientBool("filterragdolls") then
+			continue
+		end
+		if util.IsValidProp(model) and self:GetClientBool("filterprops") then
+			continue
+		end
+
 		CCSpawn(self:GetOwner(), nil, { model }) ---@diagnostic disable-line
 	end
 
@@ -39,9 +48,10 @@ function TOOL:RightClick(tr)
 		return true
 	end
 
-	if IsValid(tr.Entity) then
+	local entity = tr.Entity
+	if IsValid(entity) then
 		net.Start("modelsniper_append", false)
-		net.WriteEntity(tr.Entity)
+		net.WriteEntity(entity)
 		net.Send(self:GetOwner())
 	elseif tr.HitWorld then
 		net.Start("modelsniper_appendradius", false)

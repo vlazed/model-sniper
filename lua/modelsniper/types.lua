@@ -15,3 +15,5 @@
 ---@field visualizeSearch DCheckBoxLabel
 ---@field searchRadius DNumSlider
 ---@field clearList DButton
+---@field filterRagdolls DCheckBoxLabel
+---@field filterProps DCheckBoxLabel
