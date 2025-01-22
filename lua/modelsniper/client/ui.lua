@@ -227,11 +227,18 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 		end
 	end)
 
+	local showSelectionVolume = false
+	local selectionAlpha = 64
+	local selectionVolumeCenter = vector_origin
 	net.Receive("modelsniper_appendradius", function()
 		local trace = LocalPlayer():GetEyeTrace()
 		if not trace.HitPos then
 			return
 		end
+
+		showSelectionVolume = true
+		selectionAlpha = 64
+		selectionVolumeCenter = trace.HitPos
 
 		local searchResult = ents.FindInSphere(trace.HitPos, searchRadius:GetValue())
 		local list = ""
@@ -269,12 +276,25 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 
 	local radiusColor = Color(255, 0, 0, 64)
 	local centerColor = Color(128, 255, 0)
+	local selectionColor = Color(0, 128, 255, selectionAlpha)
 	hook.Remove("PostDrawTranslucentRenderables", "modelsniper_visualizesearch")
 	hook.Add("PostDrawTranslucentRenderables", "modelsniper_visualizesearch", function(depth, skybox)
-		if not IsValid(visualizeSearch) or not visualizeSearch:GetChecked() then
+		if skybox then
 			return
 		end
-		if skybox then
+
+		render.SetColorMaterial()
+
+		if showSelectionVolume then
+			render.DrawSphere(selectionVolumeCenter, searchRadius:GetValue(), 10, 10, selectionColor)
+			selectionAlpha = selectionAlpha - 1
+			selectionColor.a = selectionAlpha
+			if selectionAlpha == 0 then
+				showSelectionVolume = false
+			end
+		end
+
+		if not IsValid(visualizeSearch) or not visualizeSearch:GetChecked() then
 			return
 		end
 		local player = LocalPlayer()
@@ -283,7 +303,6 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 		if weapon:GetClass() == "gmod_tool" and weapon:GetMode() == "modelsniper" then
 			local pos = player:GetEyeTrace().HitPos
 
-			render.SetColorMaterial()
 			render.DrawSphere(pos, 1, 10, 10, centerColor)
 			render.DrawSphere(pos, searchRadius:GetValue(), 10, 10, radiusColor)
 		end
