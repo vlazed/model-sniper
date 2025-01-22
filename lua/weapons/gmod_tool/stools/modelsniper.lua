@@ -16,7 +16,6 @@ function TOOL:Think()
 	end
 end
 
-local models = ""
 ---Spawn model(s) from the model set
 ---@param tr table|TraceResult
 ---@return boolean
@@ -25,17 +24,8 @@ function TOOL:LeftClick(tr)
 		return true
 	end
 
-	local modelList = string.Split(models, "\n")
-	for _, model in ipairs(modelList) do
-		if util.IsValidRagdoll(model) and self:GetClientBool("filterragdolls") then
-			continue
-		end
-		if util.IsValidProp(model) and self:GetClientBool("filterprops") then
-			continue
-		end
-
-		CCSpawn(self:GetOwner(), nil, { model }) ---@diagnostic disable-line
-	end
+	net.Start("modelsniper_request")
+	net.Send(self:GetOwner())
 
 	return true
 end
@@ -62,8 +52,23 @@ function TOOL:RightClick(tr)
 end
 
 if SERVER then
-	net.Receive("modelsniper_send", function(len, ply)
-		models = util.Decompress(net.ReadData(len / 8))
+	net.Receive("modelsniper_send", function(_, ply)
+		local len = net.ReadUInt(16)
+		local models = util.Decompress(net.ReadData(len))
+		local willFilterRagdolls = net.ReadBool()
+		local willFilterProps = net.ReadBool()
+
+		local modelList = string.Split(models, "\n")
+		for _, model in ipairs(modelList) do
+			if util.IsValidRagdoll(model) and willFilterRagdolls then
+				continue
+			end
+			if util.IsValidProp(model) and willFilterProps then
+				continue
+			end
+
+			CCSpawn(ply, nil, { model }) ---@diagnostic disable-line
+		end
 	end)
 	return
 end

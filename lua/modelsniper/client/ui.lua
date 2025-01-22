@@ -103,15 +103,25 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 	local filterRagdolls = panelChildren.filterRagdolls
 	local filterProps = panelChildren.filterProps
 
-	function clearList:DoClick()
-		modelList:SetValue("")
+	-- This will be networked when we request to spawn some models
+	local models = ""
+
+	local function sendModels()
+		local compressed = util.Compress(models)
+
+		net.Start("modelsniper_send")
+		net.WriteUInt(#compressed, 16)
+		net.WriteData(compressed, #compressed)
+		net.WriteBool(filterRagdolls:GetChecked())
+		net.WriteBool(filterProps:GetChecked())
+		net.SendToServer()
 	end
 
 	---@param lines string
 	local function updateGallery(lines)
 		-- Fill this up to ensure that we don't get duplicate icons if we get any
 		local modelSet = {}
-		local models = {}
+		local modelArray = {}
 
 		modelGallery:Clear()
 		---@type Model[]
@@ -125,50 +135,46 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 				modelSet[model] = true
 
 				local icon = vgui.Create("SpawnIcon", modelGallery)
-				icon:SetEnabled(false)
 				icon:SetModel(MODELS_PREFIX .. model)
 				icon:SetSize(50, 50)
 
 				modelGallery:Add(icon)
 				modelGallery:Layout()
-				table.insert(models, MODELS_PREFIX .. model)
+				table.insert(modelArray, MODELS_PREFIX .. model)
 			end
 		end
 
 		-- Forces an update to the panel, allowing icons to render
 		modelGallery:GetParent():SizeTo(-1, 250, 0)
 
-		return table.concat(models, "\n")
+		models = table.concat(modelArray, "\n")
 	end
 
-	---@param list string
-	local function sendModels(list)
-		local models = util.Compress(updateGallery(list))
-
-		net.Start("modelsniper_send")
-		net.WriteData(models, #models)
-		net.SendToServer()
+	function clearList:DoClick()
+		modelList:SetValue("")
 	end
 
 	function modelList:OnLoseFocus()
 		self:UpdateConvarValue()
 
 		hook.Call("OnTextEntryLoseFocus", nil, self)
-		sendModels(modelList:GetValue())
+		updateGallery(modelList:GetValue())
 	end
 
 	function modelList:OnValueChange(newValue)
-		sendModels(newValue)
+		updateGallery(newValue)
 	end
 
 	function allowDuplicates:OnChange()
-		sendModels(modelList:GetValue())
+		updateGallery(modelList:GetValue())
 	end
 
 	local function appendValueToList(list, value)
 		local newValue = list:GetValue() .. "\n" .. value
 		list:SetValue(string.Trim(newValue, "\n"))
 	end
+
+	net.Receive("modelsniper_request", sendModels)
 
 	net.Receive("modelsniper_append", function()
 		local entity = net.ReadEntity()
