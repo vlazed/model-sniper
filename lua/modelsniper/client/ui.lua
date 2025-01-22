@@ -198,24 +198,22 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 	local centerColor = Color(128, 255, 0)
 	hook.Remove("PostDrawTranslucentRenderables", "modelsniper_visualizesearch")
 	hook.Add("PostDrawTranslucentRenderables", "modelsniper_visualizesearch", function(depth, skybox)
-		if not visualizeSearch:GetChecked() then
+		if not IsValid(visualizeSearch) or not visualizeSearch:GetChecked() then
 			return
 		end
 		if skybox then
 			return
 		end
 		local player = LocalPlayer()
-		local weapon = player:GetWeapon("gmod_tool")
+		local weapon = player:GetActiveWeapon()
 		---@diagnostic disable-next-line
-		if weapon and weapon:GetMode() ~= "modelsniper" then
-			return
+		if weapon:GetClass() == "gmod_tool" and weapon:GetMode() == "modelsniper" then
+			local pos = player:GetEyeTrace().HitPos
+
+			render.SetColorMaterial()
+			render.DrawSphere(pos, 1, 10, 10, centerColor)
+			render.DrawSphere(pos, searchRadius:GetValue(), 10, 10, radiusColor)
 		end
-
-		local pos = player:GetEyeTrace().HitPos
-
-		render.SetColorMaterial()
-		render.DrawSphere(pos, 1, 10, 10, centerColor)
-		render.DrawSphere(pos, searchRadius:GetValue(), 10, 10, radiusColor)
 	end)
 end
 
