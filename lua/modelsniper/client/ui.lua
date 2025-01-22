@@ -1,9 +1,14 @@
+---@module "modelsniper.shared.helpers"
+local helpers = include("modelsniper/shared/helpers.lua")
+
 local MODELS_PREFIX = "models/"
 local ENTITY_FILTER = {
 	proxyent_tf2itempaint = true,
 	proxyent_tf2critglow = true,
 	proxyent_tf2cloakeffect = true,
 }
+
+local getAncestor = helpers.getAncestor
 
 local ui = {}
 
@@ -74,11 +79,13 @@ function ui.ConstructPanel(cPanel, panelProps, panelState)
 	local settings = makeCategory(cPanel, "Settings", "DForm")
 
 	local filters = makeCategory(settings, "Filters", "DForm")
-	local filterRagdolls = filters:CheckBox("Filter ragdolls", "modelsniper_filterragdolls")
+	local filterRagdolls = filters:CheckBox("Ragdolls", "modelsniper_filterragdolls")
 	filterRagdolls:SetTooltip("Disallow ragdolls from list appending or model spawning")
-	local filterProps = filters:CheckBox("Filter props", "modelsniper_filterprops")
+	local filterProps = filters:CheckBox("Props", "modelsniper_filterprops")
 	filterProps:SetTooltip("Disallow effect or physics props from list appending or model spawning")
-	local allowDuplicates = filters:CheckBox("Allow duplicates", "modelsniper_allowduplicates")
+	local filterPlayers = filters:CheckBox("Players", "modelsniper_filterplayers")
+	filterPlayers:SetTooltip("Disallow players and its descendants (weapons, PAC3 items) from list appending")
+	local allowDuplicates = filters:CheckBox("Duplicates", "modelsniper_allowduplicates")
 	allowDuplicates:SetTooltip("If checked, duplicate models in the list can be spawned, rather than just one of them")
 
 	local visualizeSearch = settings:CheckBox("Visualize search", "")
@@ -93,6 +100,7 @@ function ui.ConstructPanel(cPanel, panelProps, panelState)
 		clearList = clearList,
 		filterRagdolls = filterRagdolls,
 		filterProps = filterProps,
+		filterPlayers = filterPlayers,
 		modelCount = modelCount,
 	}
 end
@@ -109,6 +117,7 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 	local clearList = panelChildren.clearList
 	local filterRagdolls = panelChildren.filterRagdolls
 	local filterProps = panelChildren.filterProps
+	local filterPlayers = panelChildren.filterPlayers
 	local modelCount = panelChildren.modelCount
 
 	-- This will be networked when we request to spawn some models
@@ -236,6 +245,12 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 				and util.IsValidModel(entity:GetModel())
 			then
 				local model = entity:GetModel()
+				local ancestor = getAncestor(entity)
+				if filterPlayers:GetChecked() then
+					if ancestor:IsPlayer() or ancestor:GetClass() == "viewmodel" then
+						continue
+					end
+				end
 				if util.IsValidRagdoll(model) and filterRagdolls:GetChecked() then
 					continue
 				end

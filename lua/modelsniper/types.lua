@@ -16,5 +16,6 @@
 ---@field searchRadius DNumSlider
 ---@field clearList DButton
 ---@field filterRagdolls DCheckBoxLabel
+---@field filterPlayers DCheckBoxLabel
 ---@field filterProps DCheckBoxLabel
 ---@field modelCount DLabel

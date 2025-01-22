@@ -9,6 +9,7 @@ TOOL.ClientConVar["allowduplicates"] = 0
 TOOL.ClientConVar["searchradius"] = 30
 TOOL.ClientConVar["filterragdolls"] = 0
 TOOL.ClientConVar["filterprops"] = 0
+TOOL.ClientConVar["filterplayers"] = 0
 
 local shouldRebuild = true
 function TOOL:Think()
