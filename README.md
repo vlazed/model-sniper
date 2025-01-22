@@ -18,7 +18,8 @@ This adds a spawner tool, "Model Sniper", which allows the player to spawn multi
 
 ### Features
 
-- Editable entry to specify a list of models for spawning  
+- Editable entry to specify a list of models for spawning, and a model gallery which displays the icons of these models
+  - Models from the gallery can also be spawned by clicking on them, just like the regular spawnmenu  
 - Model picking, which either appends the selected entity's model to the list, or appends a collection of entities together
   - Also supports getting bonemerged models
   - Includes settings for visualizing or modifying the search volume
