@@ -4,6 +4,7 @@ Spawn models instantly from a list of known model paths without using the spawnm
 
 ## Table of Contents <!-- omit from toc -->
 - [Model Sniper](#model-sniper)
+  - [Features](#features)
   - [Rational](#rational)
 - [Disclaimer](#disclaimer)
 - [Pull Requests](#pull-requests)
@@ -13,6 +14,15 @@ Spawn models instantly from a list of known model paths without using the spawnm
 ![Model Sniper Preview](/media/modelsniper_preview.png)
 
 This adds a spawner tool, "Model Sniper", which allows the player to spawn multiple props and ragdolls from a list of models. In addition, it also allows the player to add models from the world, either by clicking on the prop or selecting props in an area, and spawn them.
+
+### Features
+
+- Editable entry to specify a list of models to spawn models 
+- Model picking, which either appends the selected entity's model to the list, or appends a collection of entities together
+  - Also supports getting bonemerged models
+  - Includes settings for visualizing or modifying the search volume
+- Additional ability to filter out model path duplicates or spawn them together 
+- TODO: Spawning patterns (rectangle, ellipse, or different shapes)
 
 ### Rational
 
