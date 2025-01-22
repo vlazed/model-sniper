@@ -48,7 +48,9 @@ function ui.ConstructPanel(cPanel, panelProps, panelState)
 
 	local clearList = modelCategory:Button("Clear list", "")
 
-	modelCategory:Help("Valid models are shown here as icons")
+	modelCategory:Help(
+		"Valid models are shown here as icons. You can also click here to spawn props as you would with the spawnmenu."
+	)
 
 	local modelGalleryScroll = vgui.Create("DScrollPanel", modelCategory)
 	modelGalleryScroll:Dock(TOP)
@@ -67,12 +69,13 @@ function ui.ConstructPanel(cPanel, panelProps, panelState)
 	modelGallery:SetBorder(10)
 
 	local settings = makeCategory(cPanel, "Settings", "DForm")
-	local filterRagdolls = settings:CheckBox("Filter ragdolls", "modelsniper_filterragdolls")
-	filterRagdolls:SetTooltip("Disallow ragdolls from list appending or model spawning")
-	local filterProps = settings:CheckBox("Filter props", "modelsniper_filterprops")
-	filterProps:SetTooltip("Disallow effect or physics props from list appending or model spawning")
 
-	local allowDuplicates = settings:CheckBox("Allow duplicates", "modelsniper_allowduplicates")
+	local filters = makeCategory(settings, "Filters", "DForm")
+	local filterRagdolls = filters:CheckBox("Filter ragdolls", "modelsniper_filterragdolls")
+	filterRagdolls:SetTooltip("Disallow ragdolls from list appending or model spawning")
+	local filterProps = filters:CheckBox("Filter props", "modelsniper_filterprops")
+	filterProps:SetTooltip("Disallow effect or physics props from list appending or model spawning")
+	local allowDuplicates = filters:CheckBox("Allow duplicates", "modelsniper_allowduplicates")
 	allowDuplicates:SetTooltip("If checked, duplicate models in the list can be spawned, rather than just one of them")
 
 	local visualizeSearch = settings:CheckBox("Visualize search", "")
@@ -137,6 +140,11 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 				local icon = vgui.Create("SpawnIcon", modelGallery)
 				icon:SetModel(MODELS_PREFIX .. model)
 				icon:SetSize(50, 50)
+				-- Enable spawning from the gallery as we would with the regular spawnmenu
+				function icon:DoClick()
+					surface.PlaySound("ui/buttonclickrelease.wav")
+					RunConsoleCommand("gm_spawn", self:GetModelName(), self:GetSkinID() or 0, self:GetBodyGroup() or "")
+				end
 
 				modelGallery:Add(icon)
 				modelGallery:Layout()
