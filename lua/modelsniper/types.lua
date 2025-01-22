@@ -17,3 +17,4 @@
 ---@field clearList DButton
 ---@field filterRagdolls DCheckBoxLabel
 ---@field filterProps DCheckBoxLabel
+---@field modelCount DLabel

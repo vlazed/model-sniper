@@ -3,6 +3,8 @@ TOOL.Name = "#tool.modelsniper.name"
 TOOL.Command = nil
 TOOL.ConfigName = ""
 
+TOOL.ServerConVar["maxspawns"] = 16
+
 TOOL.ClientConVar["allowduplicates"] = 0
 TOOL.ClientConVar["searchradius"] = 30
 TOOL.ClientConVar["filterragdolls"] = 0
@@ -53,12 +55,19 @@ end
 
 if SERVER then
 	net.Receive("modelsniper_send", function(_, ply)
+		local maxSpawns = GetConVar("modelsniper_maxspawns"):GetInt()
+
 		local len = net.ReadUInt(16)
 		local models = util.Decompress(net.ReadData(len))
 		local willFilterRagdolls = net.ReadBool()
 		local willFilterProps = net.ReadBool()
 
 		local modelList = string.Split(models, "\n")
+		if #modelList > maxSpawns then
+			ErrorNoHalt(ply:Nick(), " attempted to spawn more models than the maximum! ", #modelList, " > ", maxSpawns)
+			return
+		end
+
 		for _, model in ipairs(modelList) do
 			if util.IsValidRagdoll(model) and willFilterRagdolls then
 				continue

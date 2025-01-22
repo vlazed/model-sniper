@@ -46,6 +46,9 @@ function ui.ConstructPanel(cPanel, panelProps, panelState)
 	modelList:SetAllowNonAsciiCharacters(true)
 	modelList:SetEnterAllowed(false)
 
+	local maxSpawns = GetConVar("modelsniper_maxspawns"):GetInt()
+
+	local modelCount = modelCategory:Help("Model Count: 0" .. " < " .. maxSpawns)
 	local clearList = modelCategory:Button("Clear list", "")
 
 	modelCategory:Help(
@@ -90,6 +93,7 @@ function ui.ConstructPanel(cPanel, panelProps, panelState)
 		clearList = clearList,
 		filterRagdolls = filterRagdolls,
 		filterProps = filterProps,
+		modelCount = modelCount,
 	}
 end
 
@@ -105,11 +109,18 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 	local clearList = panelChildren.clearList
 	local filterRagdolls = panelChildren.filterRagdolls
 	local filterProps = panelChildren.filterProps
+	local modelCount = panelChildren.modelCount
 
 	-- This will be networked when we request to spawn some models
 	local models = ""
+	local count = 0
 
 	local function sendModels()
+		local maxSpawns = GetConVar("modelsniper_maxspawns"):GetInt()
+		if count > maxSpawns then
+			return
+		end
+
 		local compressed = util.Compress(models)
 
 		net.Start("modelsniper_send")
@@ -118,6 +129,12 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 		net.WriteBool(filterRagdolls:GetChecked())
 		net.WriteBool(filterProps:GetChecked())
 		net.SendToServer()
+	end
+
+	local function updateCount()
+		local maxSpawns = GetConVar("modelsniper_maxspawns"):GetInt()
+		local value = count > maxSpawns and count .. "!" or count
+		modelCount:SetText("Model Count: " .. value .. " <= " .. maxSpawns)
 	end
 
 	---@param lines string
@@ -156,6 +173,8 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 		modelGallery:GetParent():SizeTo(-1, 250, 0)
 
 		models = table.concat(modelArray, "\n")
+		count = #modelArray
+		updateCount()
 	end
 
 	function clearList:DoClick()
