@@ -6,14 +6,6 @@ TOOL.ConfigName = ""
 TOOL.ClientConVar["allowduplicates"] = 0
 TOOL.ClientConVar["searchradius"] = 30
 
-local shouldRebuild = true
-function TOOL:Think()
-	if CLIENT and shouldRebuild then
-		self:RebuildControlPanel()
-		shouldRebuild = false
-	end
-end
-
 local models = ""
 ---Spawn model(s) from the model set
 ---@param tr table|TraceResult
