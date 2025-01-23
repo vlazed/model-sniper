@@ -42,11 +42,11 @@ function TOOL:RightClick(tr)
 	end
 
 	local entity = tr.Entity
-	if IsValid(entity) then
+	if IsValid(entity) and entity:GetBrushPlaneCount() == 0 then
 		net.Start("modelsniper_append", false)
 		net.WriteEntity(entity)
 		net.Send(self:GetOwner())
-	elseif tr.HitWorld then
+	elseif tr.HitWorld or entity:GetBrushPlaneCount() > 0 then
 		net.Start("modelsniper_appendradius", false)
 		net.Send(self:GetOwner())
 	end
