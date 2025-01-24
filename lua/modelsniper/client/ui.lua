@@ -264,6 +264,7 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 	local showSelectionVolume = false
 	local selectionAlpha = 64
 	local selectionVolumeCenter = vector_origin
+	local boxes = {}
 	net.Receive("modelsniper_appendradius", function()
 		local trace = LocalPlayer():GetEyeTrace()
 		if not trace.HitPos then
@@ -304,6 +305,10 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 					continue
 				end
 
+				table.insert(
+					boxes,
+					{ entity:GetPos() + entity:OBBCenter(), entity:GetAngles(), entity:OBBMins(), entity:OBBMaxs() }
+				)
 				list = list .. model .. "\n"
 			end
 		end
@@ -317,6 +322,7 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 	local centerColor = Color(128, 255, 0)
 	local pointColor = Color(0, 255, 0)
 	local selectionColor = Color(0, 128, 255, selectionAlpha)
+	local whiteColor = Color(255, 255, 255, selectionAlpha)
 	hook.Remove("PostDrawTranslucentRenderables", "modelsniper_visualizesearch")
 	hook.Add("PostDrawTranslucentRenderables", "modelsniper_visualizesearch", function(depth, skybox)
 		if skybox then
@@ -329,10 +335,15 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 		render.SetColorMaterial()
 
 		if showSelectionVolume then
+			for _, box in ipairs(boxes) do
+				render.DrawWireframeBox(box[1], box[2], box[3], box[4], whiteColor, true)
+			end
 			render.DrawSphere(selectionVolumeCenter, searchRadius:GetValue(), 10, 10, selectionColor)
 			selectionAlpha = selectionAlpha - 1
 			selectionColor.a = selectionAlpha
+			whiteColor.a = selectionAlpha
 			if selectionAlpha == 0 then
+				boxes = {}
 				showSelectionVolume = false
 			end
 		end

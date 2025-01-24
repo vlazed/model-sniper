@@ -6,6 +6,7 @@ TOOL.ConfigName = ""
 TOOL.ServerConVar["maxspawns"] = 16
 
 TOOL.ClientConVar["searchradius"] = 30
+TOOL.ClientConVar["filterduplicates"] = 1
 TOOL.ClientConVar["filterragdolls"] = 0
 TOOL.ClientConVar["filterprops"] = 0
 TOOL.ClientConVar["filterplayers"] = 0
