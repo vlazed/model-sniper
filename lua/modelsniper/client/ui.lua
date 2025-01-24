@@ -36,6 +36,49 @@ local function makeCategory(cPanel, name, type)
 	return category
 end
 
+local contentPanel
+hook.Remove("PopulateContent", "modelsniper_modeldirectory")
+hook.Add("PopulateContent", "modelsniper_modeldirectory", function(pnlContent)
+	-- Anytime this is called, set the content panel so that we can access it outside of the hook
+	contentPanel = pnlContent
+end)
+
+-- Holds ContentContainers for specific directories so they don't get recreated
+-- TODO: It would be nice if we could directly point to an existing view panel, so that
+-- we don't have to create a content container
+local folderContents = {}
+
+---@param model string
+local function viewModelFolder(model)
+	if not contentPanel then
+		return
+	end
+	local modelDirectory = string.Split(model, "/")
+	modelDirectory[#modelDirectory] = "*.mdl"
+	local modelSearch = table.concat(modelDirectory, "/")
+	modelDirectory[#modelDirectory] = ""
+	local folder = table.concat(modelDirectory, "/") .. "/"
+	local models = file.Find("models/" .. modelSearch, "GAME")
+
+	if models and #models > 1 then
+		local propPanel = folderContents[folder]
+		if not propPanel then
+			propPanel = vgui.Create("ContentContainer", contentPanel)
+			for _, prop in ipairs(models) do
+				local cp = spawnmenu.GetContentType("model")
+				---INFO: Prop panel is a Panel class
+				---@diagnostic disable-next-line: param-type-mismatch
+				cp(propPanel, { model = "models/" .. folder .. "/" .. prop })
+			end
+			folderContents[folder] = propPanel
+		end
+		propPanel:SetVisible(false)
+		propPanel:SetTriggerSpawnlistChange(true)
+
+		contentPanel:SwitchPanel(propPanel)
+	end
+end
+
 ---@param cPanel DForm|ControlPanel
 ---@param panelProps PanelProps
 ---@return table
@@ -148,6 +191,9 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 	local spawnRadius = panelChildren.spawnRadius
 	local spawnShape = panelChildren.spawnShape
 
+	panelState.searchRadius = GetConVar("modelsniper_searchradius"):GetFloat()
+	panelState.spawnRadius = GetConVar("modelsniper_spawnradius"):GetFloat()
+
 	-- This will be networked when we request to spawn some models
 	local models = ""
 	local count = 0
@@ -200,6 +246,16 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 				function icon:DoClick()
 					surface.PlaySound("ui/buttonclickrelease.wav")
 					RunConsoleCommand("gm_spawn", self:GetModelName(), self:GetSkinID() or 0, self:GetBodyGroup() or "")
+				end
+				function icon:DoRightClick()
+					local menu = DermaMenu()
+					menu:AddOption("Copy to clipboard", function()
+						SetClipboardText(MODELS_PREFIX .. model)
+					end)
+					menu:AddOption("View folder", function()
+						viewModelFolder(model)
+					end)
+					menu:Open()
 				end
 
 				modelGallery:Add(icon)

@@ -107,18 +107,19 @@ local shapes = include("modelsniper/shared/shapes.lua")
 
 local MAX_SELECTION_ALPHA = ui.MAX_SELECTION_ALPHA
 
+---@type PanelState
 local panelState = {
 	showSelection = false,
 	selectionCenter = vector_origin,
-	searchRadius = GetConVar("modelsniper_searchradius"):GetFloat(),
-	spawnRadius = GetConVar("modelsniper_spawnradius"):GetFloat(),
+	searchRadius = GetConVar("modelsniper_searchradius") and GetConVar("modelsniper_searchradius"):GetFloat() or 4,
+	spawnRadius = GetConVar("modelsniper_spawnradius") and GetConVar("modelsniper_spawnradius"):GetFloat() or 32,
 	selectionAlpha = MAX_SELECTION_ALPHA,
 	selectionBoxes = {},
 
 	visualizeSpawn = false,
 	visualizeSearch = false,
 
-	spawnShape = GetConVar("modelsniper_spawnshape"):GetString(),
+	spawnShape = GetConVar("modelsniper_spawnshape") and GetConVar("modelsniper_spawnshape"):GetString() or "point",
 	modelArray = {},
 }
 
