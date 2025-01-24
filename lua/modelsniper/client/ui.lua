@@ -10,11 +10,13 @@ local ENTITY_FILTER = {
 	proxyent_tf2critglow = true,
 	proxyent_tf2cloakeffect = true,
 }
-local MAX_SELECTION_ALPHA = 64
 
 local getAncestor = helpers.getAncestor
 
 local ui = {}
+ui.MAX_SELECTION_ALPHA = 64
+
+local MAX_SELECTION_ALPHA = ui.MAX_SELECTION_ALPHA
 
 local function getBoolOrFloatConVar(convar, isBool)
 	return GetConVar(convar) and Either(isBool, GetConVar(convar):GetBool(), GetConVar(convar):GetFloat())
@@ -36,9 +38,8 @@ end
 
 ---@param cPanel DForm|ControlPanel
 ---@param panelProps PanelProps
----@param panelState PanelState
 ---@return table
-function ui.ConstructPanel(cPanel, panelProps, panelState)
+function ui.ConstructPanel(cPanel, panelProps)
 	local modelCategory = makeCategory(cPanel, "Model Set", "DForm")
 	modelCategory:Help(
 		"Input the model paths to spawn with this toolgun. Ensure model paths are separated line by line"
@@ -149,7 +150,6 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 
 	-- This will be networked when we request to spawn some models
 	local models = ""
-	local array = {}
 	local count = 0
 
 	local function sendModels()
@@ -213,12 +213,29 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 
 		models = table.concat(modelArray, "\n")
 		count = #modelArray
-		array = modelArray
+		panelState.modelArray = modelArray
 		updateCount()
 	end
 
 	function spawnShape:OnSelect(index, val, data)
 		GetConVar("modelsniper_spawnshape"):SetString(val)
+		panelState.spawnShape = val
+	end
+
+	function visualizeSearch:OnChange(val)
+		panelState.visualizeSearch = val
+	end
+
+	function visualizeSpawn:OnChange(val)
+		panelState.visualizeSpawn = val
+	end
+
+	function spawnRadius:OnValueChanged(newVal)
+		panelState.spawnRadius = newVal
+	end
+
+	function searchRadius:OnValueChanged(newVal)
+		panelState.searchRadius = newVal
 	end
 
 	function clearList:DoClick()
@@ -262,19 +279,15 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 		end
 	end)
 
-	local showSelectionVolume = false
-	local selectionAlpha = MAX_SELECTION_ALPHA
-	local selectionVolumeCenter = vector_origin
-	local boxes = {}
 	net.Receive("modelsniper_appendradius", function()
 		local trace = LocalPlayer():GetEyeTrace()
 		if not trace.HitPos then
 			return
 		end
 
-		showSelectionVolume = true
-		selectionAlpha = MAX_SELECTION_ALPHA
-		selectionVolumeCenter = trace.HitPos
+		panelState.showSelection = true
+		panelState.selectionAlpha = MAX_SELECTION_ALPHA
+		panelState.selectionCenter = trace.HitPos
 
 		---@type Entity[]
 		local searchResult = ents.FindInSphere(trace.HitPos, searchRadius:GetValue())
@@ -307,7 +320,7 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 				end
 
 				table.insert(
-					boxes,
+					panelState.selectionBoxes,
 					{ entity:GetPos() + entity:OBBCenter(), entity:GetAngles(), entity:OBBMins(), entity:OBBMaxs() }
 				)
 				list = list .. model .. "\n"
@@ -316,72 +329,6 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 
 		if #list > 0 then
 			appendValueToList(modelList, string.TrimRight(list, "\n"))
-		end
-	end)
-
-	local radiusColor = Color(255, 0, 0, MAX_SELECTION_ALPHA)
-	local centerColor = Color(128, 255, 0)
-	local pointColor = Color(0, 255, 0)
-	local selectionColor = Color(0, 128, 255, selectionAlpha)
-	local whiteColor = Color(255, 255, 255, selectionAlpha)
-	hook.Remove("PostDrawTranslucentRenderables", "modelsniper_visualizesearch")
-	hook.Add("PostDrawTranslucentRenderables", "modelsniper_visualizesearch", function(depth, skybox)
-		if skybox then
-			return
-		end
-
-		local player = LocalPlayer()
-		---@type TraceResult
-		local trace = player:GetEyeTrace()
-		render.SetColorMaterial()
-
-		if showSelectionVolume then
-			for _, box in ipairs(boxes) do
-				render.DrawWireframeBox(box[1], box[2], box[3], box[4], whiteColor, true)
-			end
-			render.DrawSphere(
-				selectionVolumeCenter,
-				(1 - math.ease.InExpo(selectionAlpha / MAX_SELECTION_ALPHA)) * searchRadius:GetValue(),
-				10,
-				10,
-				selectionColor
-			)
-			selectionAlpha = selectionAlpha - 0.5
-			selectionColor.a = math.ease.InExpo(selectionAlpha / MAX_SELECTION_ALPHA) * MAX_SELECTION_ALPHA
-			whiteColor.a = math.ease.InExpo(selectionAlpha / MAX_SELECTION_ALPHA) * MAX_SELECTION_ALPHA
-			if selectionAlpha <= 0 then
-				boxes = {}
-				showSelectionVolume = false
-			end
-		end
-
-		if visualizeSpawn:GetChecked() then
-			for i, _ in ipairs(array) do
-				if trace.HitPos then
-					local center = trace.HitPos * 1
-					local pos = shapes.choose(
-						string.lower(spawnShape:GetSelected()),
-						count,
-						center,
-						spawnRadius:GetValue(),
-						i,
-						player:GetAimVector()
-					)
-					render.DrawSphere(pos, 1, 5, 5, pointColor)
-				end
-			end
-		end
-
-		if not IsValid(visualizeSearch) or not visualizeSearch:GetChecked() then
-			return
-		end
-		local weapon = player:GetActiveWeapon()
-		---@diagnostic disable-next-line
-		if weapon:GetClass() == "gmod_tool" and weapon:GetMode() == "modelsniper" then
-			local pos = trace.HitPos
-
-			render.DrawSphere(pos, 1, 10, 10, centerColor)
-			render.DrawSphere(pos, searchRadius:GetValue(), 10, 10, radiusColor)
 		end
 	end)
 end

@@ -98,13 +98,102 @@ if SERVER then
 	return
 end
 
+TOOL:BuildConVarList()
+
 ---@module "modelsniper.client.ui"
 local ui = include("modelsniper/client/ui.lua")
+---@module "modelsniper.shared.shapes"
+local shapes = include("modelsniper/shared/shapes.lua")
+
+local MAX_SELECTION_ALPHA = ui.MAX_SELECTION_ALPHA
+
+local panelState = {
+	showSelection = false,
+	selectionCenter = vector_origin,
+	searchRadius = GetConVar("modelsniper_searchradius"):GetFloat(),
+	spawnRadius = GetConVar("modelsniper_spawnradius"):GetFloat(),
+	selectionAlpha = MAX_SELECTION_ALPHA,
+	selectionBoxes = {},
+
+	visualizeSpawn = false,
+	visualizeSearch = false,
+
+	spawnShape = GetConVar("modelsniper_spawnshape"):GetString(),
+	modelArray = {},
+}
 
 ---@param cPanel ControlPanel|DForm
 function TOOL.BuildCPanel(cPanel)
-	local panelChildren = ui.ConstructPanel(cPanel, {}, {})
-	ui.HookPanel(panelChildren, {}, {})
+	local panelChildren = ui.ConstructPanel(cPanel, {})
+	ui.HookPanel(panelChildren, {}, panelState)
+end
+
+do
+	local radiusColor = Color(255, 0, 0, MAX_SELECTION_ALPHA)
+	local centerColor = Color(128, 255, 0)
+	local pointColor = Color(0, 255, 0)
+	local selectionColor = Color(0, 128, 255, panelState.selectionAlpha)
+	local whiteColor = Color(255, 255, 255, panelState.selectionAlpha)
+	hook.Remove("PostDrawTranslucentRenderables", "modelsniper_visualize")
+	hook.Add("PostDrawTranslucentRenderables", "modelsniper_visualize", function(depth, skybox)
+		if skybox then
+			return
+		end
+
+		local player = LocalPlayer()
+		---@type TraceResult
+		local trace = player:GetEyeTrace()
+		render.SetColorMaterial()
+
+		if panelState.showSelection then
+			for _, box in ipairs(panelState.selectionBoxes) do
+				render.DrawWireframeBox(box[1], box[2], box[3], box[4], whiteColor, true)
+			end
+			render.DrawSphere(
+				panelState.selectionCenter,
+				(1 - math.ease.InExpo(panelState.selectionAlpha / MAX_SELECTION_ALPHA)) * panelState.searchRadius,
+				10,
+				10,
+				selectionColor
+			)
+			panelState.selectionAlpha = panelState.selectionAlpha - 0.5
+			selectionColor.a = math.ease.InExpo(panelState.selectionAlpha / MAX_SELECTION_ALPHA) * MAX_SELECTION_ALPHA
+			whiteColor.a = math.ease.InExpo(panelState.selectionAlpha / MAX_SELECTION_ALPHA) * MAX_SELECTION_ALPHA
+			if panelState.selectionAlpha <= 0 then
+				panelState.selectionBoxes = {}
+				panelState.showSelection = false
+			end
+		end
+
+		if panelState.visualizeSpawn then
+			for i, _ in ipairs(panelState.modelArray) do
+				if trace.HitPos then
+					local center = trace.HitPos * 1
+					local pos = shapes.choose(
+						string.lower(panelState.spawnShape),
+						#panelState.modelArray,
+						center,
+						panelState.spawnRadius,
+						i,
+						player:GetAimVector()
+					)
+					render.DrawSphere(pos, 1, 5, 5, pointColor)
+				end
+			end
+		end
+
+		if not panelState.visualizeSearch then
+			return
+		end
+		local weapon = player:GetActiveWeapon()
+		---@diagnostic disable-next-line
+		if weapon:GetClass() == "gmod_tool" and weapon:GetMode() == "modelsniper" then
+			local pos = trace.HitPos
+
+			render.DrawSphere(pos, 1, 10, 10, centerColor)
+			render.DrawSphere(pos, panelState.searchRadius, 10, 10, radiusColor)
+		end
+	end)
 end
 
 TOOL.Information = {
