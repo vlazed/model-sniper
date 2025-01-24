@@ -1,6 +1,9 @@
 ---@module "modelsniper.shared.helpers"
 local helpers = include("modelsniper/shared/helpers.lua")
 
+---@module "modelsniper.shared.shapes"
+local shapes = include("modelsniper/shared/shapes.lua")
+
 local MODELS_PREFIX = "models/"
 local ENTITY_FILTER = {
 	proxyent_tf2itempaint = true,
@@ -88,8 +91,23 @@ function ui.ConstructPanel(cPanel, panelProps, panelState)
 	local allowDuplicates = filters:CheckBox("Duplicates", "modelsniper_allowduplicates")
 	allowDuplicates:SetTooltip("If checked, duplicate models in the list can be spawned, rather than just one of them")
 
-	local visualizeSearch = settings:CheckBox("Visualize search", "")
-	local searchRadius = settings:NumSlider("Search Radius", "modelsniper_searchradius", 0.01, 400)
+	local spawning = makeCategory(settings, "Spawning", "DForm")
+	local spawnShape = spawning:ComboBox("Spawn Shape", "modelsniper_spawnshape")
+	---@cast spawnShape DComboBox
+	for shapeName, _ in pairs(shapes.toInt) do
+		spawnShape:AddChoice(string.NiceName(shapeName), shapeName)
+	end
+	local option = GetConVar("modelsniper_spawnshape"):GetString()
+	spawnShape:ChooseOption(string.NiceName(option), shapes.toInt[string.lower(option)] + 1)
+	spawnShape:Dock(TOP)
+	local spawnRadius = spawning:NumSlider("Spawn Radius", "modelsniper_spawnradius", 32, 256)
+	spawnRadius:Dock(TOP)
+	local visualizeSpawn = spawning:CheckBox("Visualize spawn", "")
+	visualizeSpawn:Dock(TOP)
+
+	local searching = makeCategory(settings, "Searching", "DForm")
+	local visualizeSearch = searching:CheckBox("Visualize search", "")
+	local searchRadius = searching:NumSlider("Search Radius", "modelsniper_searchradius", 0.01, 400)
 
 	return {
 		modelList = modelList,
@@ -97,11 +115,14 @@ function ui.ConstructPanel(cPanel, panelProps, panelState)
 		allowDuplicates = allowDuplicates,
 		searchRadius = searchRadius,
 		visualizeSearch = visualizeSearch,
+		visualizeSpawn = visualizeSpawn,
 		clearList = clearList,
 		filterRagdolls = filterRagdolls,
 		filterProps = filterProps,
 		filterPlayers = filterPlayers,
 		modelCount = modelCount,
+		spawnShape = spawnShape,
+		spawnRadius = spawnRadius,
 	}
 end
 
@@ -114,14 +135,18 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 	local allowDuplicates = panelChildren.allowDuplicates
 	local searchRadius = panelChildren.searchRadius
 	local visualizeSearch = panelChildren.visualizeSearch
+	local visualizeSpawn = panelChildren.visualizeSpawn
 	local clearList = panelChildren.clearList
 	local filterRagdolls = panelChildren.filterRagdolls
 	local filterProps = panelChildren.filterProps
 	local filterPlayers = panelChildren.filterPlayers
 	local modelCount = panelChildren.modelCount
+	local spawnRadius = panelChildren.spawnRadius
+	local spawnShape = panelChildren.spawnShape
 
 	-- This will be networked when we request to spawn some models
 	local models = ""
+	local array = {}
 	local count = 0
 
 	local function sendModels()
@@ -137,6 +162,8 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 		net.WriteData(compressed, #compressed)
 		net.WriteBool(filterRagdolls:GetChecked())
 		net.WriteBool(filterProps:GetChecked())
+		net.WriteFloat(spawnRadius:GetValue())
+		net.WriteUInt(shapes.toInt[string.lower(spawnShape:GetSelected())], math.log(shapes.count + 1, 2))
 		net.SendToServer()
 	end
 
@@ -183,7 +210,12 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 
 		models = table.concat(modelArray, "\n")
 		count = #modelArray
+		array = modelArray
 		updateCount()
+	end
+
+	function spawnShape:OnSelect(index, val, data)
+		GetConVar("modelsniper_spawnshape"):SetString(val)
 	end
 
 	function clearList:DoClick()
@@ -250,6 +282,7 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 				and entity.GetModel
 				and entity:GetModel()
 				and util.IsValidModel(entity:GetModel())
+				and entity:GetModel() ~= "models/error.mdl"
 			then
 				local model = entity:GetModel()
 				local ancestor = getAncestor(entity)
@@ -276,6 +309,7 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 
 	local radiusColor = Color(255, 0, 0, 64)
 	local centerColor = Color(128, 255, 0)
+	local pointColor = Color(0, 255, 0)
 	local selectionColor = Color(0, 128, 255, selectionAlpha)
 	hook.Remove("PostDrawTranslucentRenderables", "modelsniper_visualizesearch")
 	hook.Add("PostDrawTranslucentRenderables", "modelsniper_visualizesearch", function(depth, skybox)
@@ -283,6 +317,9 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 			return
 		end
 
+		local player = LocalPlayer()
+		---@type TraceResult
+		local trace = player:GetEyeTrace()
 		render.SetColorMaterial()
 
 		if showSelectionVolume then
@@ -294,14 +331,30 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 			end
 		end
 
+		if visualizeSpawn:GetChecked() then
+			for i, _ in ipairs(array) do
+				if trace.HitPos then
+					local center = trace.HitPos * 1
+					local pos = shapes.choose(
+						string.lower(spawnShape:GetSelected()),
+						count,
+						center,
+						spawnRadius:GetValue(),
+						i,
+						player:GetAimVector()
+					)
+					render.DrawSphere(pos, 1, 5, 5, pointColor)
+				end
+			end
+		end
+
 		if not IsValid(visualizeSearch) or not visualizeSearch:GetChecked() then
 			return
 		end
-		local player = LocalPlayer()
 		local weapon = player:GetActiveWeapon()
 		---@diagnostic disable-next-line
 		if weapon:GetClass() == "gmod_tool" and weapon:GetMode() == "modelsniper" then
-			local pos = player:GetEyeTrace().HitPos
+			local pos = trace.HitPos
 
 			render.DrawSphere(pos, 1, 10, 10, centerColor)
 			render.DrawSphere(pos, searchRadius:GetValue(), 10, 10, radiusColor)

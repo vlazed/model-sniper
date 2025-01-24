@@ -11,6 +11,9 @@ TOOL.ClientConVar["filterragdolls"] = 0
 TOOL.ClientConVar["filterprops"] = 0
 TOOL.ClientConVar["filterplayers"] = 0
 
+TOOL.ClientConVar["spawnradius"] = 4
+TOOL.ClientConVar["spawnshape"] = "Circle"
+
 local shouldRebuild = true
 function TOOL:Think()
 	if CLIENT and shouldRebuild then
@@ -55,6 +58,11 @@ function TOOL:RightClick(tr)
 end
 
 if SERVER then
+	---@module "modelsniper.shared.spawn"
+	local spawn = include("modelsniper/shared/spawn.lua")
+	---@module "modelsniper.shared.shapes"
+	local shapes = include("modelsniper/shared/shapes.lua")
+
 	net.Receive("modelsniper_send", function(_, ply)
 		local maxSpawns = GetConVar("modelsniper_maxspawns"):GetInt()
 
@@ -62,14 +70,21 @@ if SERVER then
 		local models = util.Decompress(net.ReadData(len))
 		local willFilterRagdolls = net.ReadBool()
 		local willFilterProps = net.ReadBool()
+		local spawnRadius = net.ReadFloat()
+		local spawnShapeIndex = net.ReadUInt(math.log(shapes.count + 1, 2))
 
 		local modelList = string.Split(models, "\n")
-		if #modelList > maxSpawns then
+		local spawns = #modelList
+		if spawns > maxSpawns then
 			ErrorNoHalt(ply:Nick(), " attempted to spawn more models than the maximum! ", #modelList, " > ", maxSpawns)
 			return
 		end
 
-		for _, model in ipairs(modelList) do
+		local filter = {}
+		for i, model in ipairs(modelList) do
+			if not util.IsValidModel(model) then
+				continue
+			end
 			if util.IsValidRagdoll(model) and willFilterRagdolls then
 				continue
 			end
@@ -77,7 +92,7 @@ if SERVER then
 				continue
 			end
 
-			CCSpawn(ply, nil, { model }) ---@diagnostic disable-line
+			table.insert(filter, spawn(ply, model, i, spawnRadius, shapes.toShape[spawnShapeIndex], spawns, filter)) ---@diagnostic disable-line
 		end
 	end)
 	return

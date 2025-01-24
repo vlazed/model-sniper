@@ -23,8 +23,13 @@ This adds a spawner tool, "Model Sniper", which allows the player to spawn multi
 - Model picking, which either appends the selected entity's model to the list, or appends a collection of entities together
   - Also supports getting bonemerged models
   - Includes settings for visualizing or modifying the search volume
-- Additional ability to filter out model path duplicates or spawn them together 
-- TODO: Spawning patterns (rectangle, ellipse, or different shapes) and filters (only spawn ragdolls or effect/physics props)
+- Filters to prevent from appending to list or spawning:
+  - Duplicates
+  - Ragdolls
+  - Effect/Physics props
+  - Players
+- Spawning patterns (point, rectangle, circle)
+  - Includes settings to preview patterns before spawning
 
 ### Rational
 
@@ -41,7 +46,7 @@ To illustrate the capabilities and limitations of this tool, it is worth mention
   - To add to this, this tool does not (as of yet) give users the ability to save their model paths. I think this can be done by saving a text file of the specified models, although at this point, one could just use the Duplicator.
   - One subtle difference between this tool and the duplicator is that the Duplicator preserves bonemerged props on an entity, while this tool spawns them separately
 - This tool, similar to the Random Array Tool, allows one to insert models to spawn by specifying their model path. However, this tool is not restricted to a single entry to spawn models, allowing one to choose which models to spawn by simply removing a line from the model list. This also enables a process of "transferring" lists of model paths between users.
-- TODO: This tool, similar to the Random Array Tool and the Entity Group Spawner, can control the spawning pattern of the selected entities, constraining them to a point, a rectangle, or an ellipse. However, I opted to keep the spawning pattern deterministic, with no customization for skin or bodygroup randomness. These are just utilities to organize how the models are spawned.
+- This tool, similar to the Random Array Tool and the Entity Group Spawner, can control the spawning pattern of the selected entities, constraining them to a point, a rectangle, or a circle. However, I opted to keep the spawning pattern deterministic, with no customization for skin or bodygroup randomness. These are just utilities to organize how the models are spawned.
 
 ## Disclaimer
 
