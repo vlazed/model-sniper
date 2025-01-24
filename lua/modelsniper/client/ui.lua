@@ -186,7 +186,7 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 		local modelPaths = string.Split(lines, "\n")
 		for _, model in ipairs(modelPaths) do
 			if string.StartsWith(model, MODELS_PREFIX) then
-				model = string.sub(model, #MODELS_PREFIX, #model)
+				model = string.sub(model, #MODELS_PREFIX + 1, #model)
 			end
 
 			if not IsUselessModel(model) and (not modelSet[model] or not filterDuplicates:GetChecked()) then
@@ -274,6 +274,7 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 		selectionAlpha = 64
 		selectionVolumeCenter = trace.HitPos
 
+		---@type Entity[]
 		local searchResult = ents.FindInSphere(trace.HitPos, searchRadius:GetValue())
 		local list = ""
 		for _, entity in ipairs(searchResult) do
@@ -297,6 +298,9 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 					continue
 				end
 				if util.IsValidProp(model) and filterProps:GetChecked() then
+					continue
+				end
+				if string.find(models, model) and filterDuplicates:GetChecked() then
 					continue
 				end
 
