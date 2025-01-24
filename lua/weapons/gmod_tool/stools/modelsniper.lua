@@ -16,7 +16,7 @@ TOOL.ClientConVar["spawnshape"] = "Circle"
 
 local shouldRebuild = true
 function TOOL:Think()
-	if CLIENT and shouldRebuild then
+	if CLIENT and shouldRebuild and IsValid(spawnmenu.ActiveControlPanel()) then
 		self:RebuildControlPanel()
 		shouldRebuild = false
 	end
