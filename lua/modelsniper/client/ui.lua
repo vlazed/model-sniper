@@ -88,8 +88,10 @@ function ui.ConstructPanel(cPanel, panelProps, panelState)
 	filterProps:SetTooltip("Disallow effect or physics props from list appending or model spawning")
 	local filterPlayers = filters:CheckBox("Players", "modelsniper_filterplayers")
 	filterPlayers:SetTooltip("Disallow players and its descendants (weapons, PAC3 items) from list appending")
-	local allowDuplicates = filters:CheckBox("Duplicates", "modelsniper_allowduplicates")
-	allowDuplicates:SetTooltip("If checked, duplicate models in the list can be spawned, rather than just one of them")
+	local filterDuplicates = filters:CheckBox("Duplicates", "modelsniper_filterduplicates")
+	filterDuplicates:SetTooltip(
+		"If unchecked, duplicate models in the list can be appended to and spawned, rather than just one of them"
+	)
 
 	local spawning = makeCategory(settings, "Spawning", "DForm")
 	local spawnShape = spawning:ComboBox("Spawn Shape", "modelsniper_spawnshape")
@@ -112,7 +114,7 @@ function ui.ConstructPanel(cPanel, panelProps, panelState)
 	return {
 		modelList = modelList,
 		modelGallery = modelGallery,
-		allowDuplicates = allowDuplicates,
+		filterDuplicates = filterDuplicates,
 		searchRadius = searchRadius,
 		visualizeSearch = visualizeSearch,
 		visualizeSpawn = visualizeSpawn,
@@ -132,7 +134,7 @@ end
 function ui.HookPanel(panelChildren, panelProps, panelState)
 	local modelList = panelChildren.modelList
 	local modelGallery = panelChildren.modelGallery
-	local allowDuplicates = panelChildren.allowDuplicates
+	local filterDuplicates = panelChildren.filterDuplicates
 	local searchRadius = panelChildren.searchRadius
 	local visualizeSearch = panelChildren.visualizeSearch
 	local visualizeSpawn = panelChildren.visualizeSpawn
@@ -187,7 +189,7 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 				model = string.sub(model, #MODELS_PREFIX, #model)
 			end
 
-			if not IsUselessModel(model) and (not modelSet[model] or allowDuplicates:GetChecked()) then
+			if not IsUselessModel(model) and (not modelSet[model] or not filterDuplicates:GetChecked()) then
 				modelSet[model] = true
 
 				local icon = vgui.Create("SpawnIcon", modelGallery)
@@ -233,7 +235,7 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 		updateGallery(newValue)
 	end
 
-	function allowDuplicates:OnChange()
+	function filterDuplicates:OnChange()
 		updateGallery(modelList:GetValue())
 	end
 
