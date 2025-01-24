@@ -10,6 +10,7 @@ local ENTITY_FILTER = {
 	proxyent_tf2critglow = true,
 	proxyent_tf2cloakeffect = true,
 }
+local MAX_SELECTION_ALPHA = 64
 
 local getAncestor = helpers.getAncestor
 
@@ -262,7 +263,7 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 	end)
 
 	local showSelectionVolume = false
-	local selectionAlpha = 64
+	local selectionAlpha = MAX_SELECTION_ALPHA
 	local selectionVolumeCenter = vector_origin
 	local boxes = {}
 	net.Receive("modelsniper_appendradius", function()
@@ -272,7 +273,7 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 		end
 
 		showSelectionVolume = true
-		selectionAlpha = 64
+		selectionAlpha = MAX_SELECTION_ALPHA
 		selectionVolumeCenter = trace.HitPos
 
 		---@type Entity[]
@@ -318,7 +319,7 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 		end
 	end)
 
-	local radiusColor = Color(255, 0, 0, 64)
+	local radiusColor = Color(255, 0, 0, MAX_SELECTION_ALPHA)
 	local centerColor = Color(128, 255, 0)
 	local pointColor = Color(0, 255, 0)
 	local selectionColor = Color(0, 128, 255, selectionAlpha)
@@ -338,11 +339,17 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 			for _, box in ipairs(boxes) do
 				render.DrawWireframeBox(box[1], box[2], box[3], box[4], whiteColor, true)
 			end
-			render.DrawSphere(selectionVolumeCenter, searchRadius:GetValue(), 10, 10, selectionColor)
-			selectionAlpha = selectionAlpha - 1
-			selectionColor.a = selectionAlpha
-			whiteColor.a = selectionAlpha
-			if selectionAlpha == 0 then
+			render.DrawSphere(
+				selectionVolumeCenter,
+				(1 - math.ease.InExpo(selectionAlpha / MAX_SELECTION_ALPHA)) * searchRadius:GetValue(),
+				10,
+				10,
+				selectionColor
+			)
+			selectionAlpha = selectionAlpha - 0.5
+			selectionColor.a = math.ease.InExpo(selectionAlpha / MAX_SELECTION_ALPHA) * MAX_SELECTION_ALPHA
+			whiteColor.a = math.ease.InExpo(selectionAlpha / MAX_SELECTION_ALPHA) * MAX_SELECTION_ALPHA
+			if selectionAlpha <= 0 then
 				boxes = {}
 				showSelectionVolume = false
 			end
