@@ -71,7 +71,7 @@ if SERVER then
 		local willFilterRagdolls = net.ReadBool()
 		local willFilterProps = net.ReadBool()
 		local spawnRadius = net.ReadFloat()
-		local spawnShapeIndex = net.ReadUInt(math.log(shapes.count + 1, 2))
+		local spawnShapeIndex = net.ReadUInt(math.ceil(math.log(shapes.count + 1, 2)))
 
 		local modelList = string.Split(models, "\n")
 		local spawns = #modelList

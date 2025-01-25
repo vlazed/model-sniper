@@ -11,6 +11,7 @@ local ENTITY_FILTER = {
 	proxyent_tf2cloakeffect = true,
 }
 
+local getPhrase = language.GetPhrase
 local getAncestor = helpers.getAncestor
 
 local ui = {}
@@ -83,15 +84,13 @@ end
 ---@param panelProps PanelProps
 ---@return table
 function ui.ConstructPanel(cPanel, panelProps)
-	local modelCategory = makeCategory(cPanel, "Model Set", "DForm")
-	modelCategory:Help(
-		"Input the model paths to spawn with this toolgun. Ensure model paths are separated line by line"
-	)
+	local modelCategory = makeCategory(cPanel, "#ui.modelsniper.model", "DForm")
+	modelCategory:Help("#ui.modelsniper.model.list")
 
 	local modelList = vgui.Create("DTextEntry", cPanel)
 	modelCategory:AddItem(modelList)
 
-	modelList:SetPlaceholderText("Example: kleiner.mdl or models/kleiner.mdl")
+	modelList:SetPlaceholderText("#ui.modelsniper.model.example")
 	modelList:Dock(TOP)
 	modelList:SizeTo(-1, 250, 0)
 	modelList:StretchToParent(0, 0, 0, 0)
@@ -101,12 +100,10 @@ function ui.ConstructPanel(cPanel, panelProps)
 
 	local maxSpawns = GetConVar("modelsniper_maxspawns"):GetInt()
 
-	local modelCount = modelCategory:Help("Model Count: 0" .. " < " .. maxSpawns)
-	local clearList = modelCategory:Button("Clear list", "")
+	local modelCount = modelCategory:Help(getPhrase("ui.modelsniper.model.count") .. "0" .. " <= " .. maxSpawns)
+	local clearList = modelCategory:Button("#ui.modelsniper.model.clear", "")
 
-	modelCategory:Help(
-		"Valid models are shown here as icons. You can also click here to spawn props as you would with the spawnmenu."
-	)
+	modelCategory:Help("#ui.modelsniper.model.icons")
 
 	local modelGalleryScroll = vgui.Create("DScrollPanel", modelCategory)
 	modelGalleryScroll:Dock(TOP)
@@ -126,20 +123,18 @@ function ui.ConstructPanel(cPanel, panelProps)
 
 	local settings = makeCategory(cPanel, "Settings", "DForm")
 
-	local filters = makeCategory(settings, "Filters", "DForm")
-	local filterRagdolls = filters:CheckBox("Ragdolls", "modelsniper_filterragdolls")
-	filterRagdolls:SetTooltip("Disallow ragdolls from list appending or model spawning")
-	local filterProps = filters:CheckBox("Props", "modelsniper_filterprops")
-	filterProps:SetTooltip("Disallow effect or physics props from list appending or model spawning")
-	local filterPlayers = filters:CheckBox("Players", "modelsniper_filterplayers")
-	filterPlayers:SetTooltip("Disallow players and its descendants (weapons, PAC3 items) from list appending")
-	local filterDuplicates = filters:CheckBox("Duplicates", "modelsniper_filterduplicates")
-	filterDuplicates:SetTooltip(
-		"If unchecked, duplicate models in the list can be appended to and spawned, rather than just one of them"
-	)
+	local filters = makeCategory(settings, "#ui.modelsniper.filters", "DForm")
+	local filterRagdolls = filters:CheckBox("#ui.modelsniper.filters.ragdolls", "modelsniper_filterragdolls")
+	filterRagdolls:SetTooltip("#ui.modelsniper.filters.ragdolls.tooltip")
+	local filterProps = filters:CheckBox("#ui.modelsniper.filters.props", "modelsniper_filterprops")
+	filterProps:SetTooltip("#ui.modelsniper.filters.props.tooltip")
+	local filterPlayers = filters:CheckBox("#ui.modelsniper.filters.players", "modelsniper_filterplayers")
+	filterPlayers:SetTooltip("#ui.modelsniper.filters.players.tooltip")
+	local filterDuplicates = filters:CheckBox("#ui.modelsniper.filters.duplicates", "modelsniper_filterduplicates")
+	filterDuplicates:SetTooltip("#ui.modelsniper.filters.duplicates.tooltip")
 
-	local spawning = makeCategory(settings, "Spawning", "DForm")
-	local spawnShape = spawning:ComboBox("Spawn Shape", "modelsniper_spawnshape")
+	local spawning = makeCategory(settings, "#ui.modelsniper.spawn", "DForm")
+	local spawnShape = spawning:ComboBox("#ui.modelsniper.spawn.shape", "modelsniper_spawnshape")
 	---@cast spawnShape DComboBox
 	for shapeName, _ in pairs(shapes.toInt) do
 		spawnShape:AddChoice(string.NiceName(shapeName), shapeName)
@@ -147,14 +142,14 @@ function ui.ConstructPanel(cPanel, panelProps)
 	local option = GetConVar("modelsniper_spawnshape"):GetString()
 	spawnShape:ChooseOption(string.NiceName(option), shapes.toInt[string.lower(option)] + 1)
 	spawnShape:Dock(TOP)
-	local spawnRadius = spawning:NumSlider("Spawn Radius", "modelsniper_spawnradius", 32, 256)
+	local spawnRadius = spawning:NumSlider("#ui.modelsniper.spawn.radius", "modelsniper_spawnradius", 32, 256)
 	spawnRadius:Dock(TOP)
-	local visualizeSpawn = spawning:CheckBox("Visualize spawn", "")
+	local visualizeSpawn = spawning:CheckBox("#ui.modelsniper.spawn.visual", "")
 	visualizeSpawn:Dock(TOP)
 
-	local searching = makeCategory(settings, "Searching", "DForm")
-	local visualizeSearch = searching:CheckBox("Visualize search", "")
-	local searchRadius = searching:NumSlider("Search Radius", "modelsniper_searchradius", 0.01, 400)
+	local searching = makeCategory(settings, "#ui.modelsniper.search", "DForm")
+	local visualizeSearch = searching:CheckBox("#ui.modelsniper.search.visual", "")
+	local searchRadius = searching:NumSlider("#ui.modelsniper.search.radius", "modelsniper_searchradius", 0.01, 400)
 
 	return {
 		modelList = modelList,
@@ -212,14 +207,14 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 		net.WriteBool(filterRagdolls:GetChecked())
 		net.WriteBool(filterProps:GetChecked())
 		net.WriteFloat(spawnRadius:GetValue())
-		net.WriteUInt(shapes.toInt[string.lower(spawnShape:GetSelected())], math.log(shapes.count + 1, 2))
+		net.WriteUInt(shapes.toInt[string.lower(spawnShape:GetSelected())], math.ceil(math.log(shapes.count + 1, 2)))
 		net.SendToServer()
 	end
 
 	local function updateCount()
 		local maxSpawns = GetConVar("modelsniper_maxspawns"):GetInt()
 		local value = count > maxSpawns and count .. "!" or count
-		modelCount:SetText("Model Count: " .. value .. " <= " .. maxSpawns)
+		modelCount:SetText(getPhrase("ui.modelsniper.model.count") .. value .. " <= " .. maxSpawns)
 	end
 
 	---@param lines string
@@ -249,10 +244,10 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 				end
 				function icon:DoRightClick()
 					local menu = DermaMenu()
-					menu:AddOption("Copy to clipboard", function()
+					menu:AddOption("#ui.modelsniper.icon.copy", function()
 						SetClipboardText(MODELS_PREFIX .. model)
 					end)
-					menu:AddOption("View folder", function()
+					menu:AddOption("#ui.modelsniper.icon.view", function()
 						viewModelFolder(model)
 					end)
 					menu:Open()
