@@ -147,16 +147,14 @@ do
 		render.SetColorMaterial()
 
 		if panelState.showSelection then
+			local searchRadius = (1 - math.ease.InExpo(panelState.selectionAlpha / MAX_SELECTION_ALPHA))
+				* panelState.searchRadius
 			for _, box in ipairs(panelState.selectionBoxes) do
-				render.DrawWireframeBox(box[1], box[2], box[3], box[4], whiteColor, true)
+				if panelState.selectionCenter:DistToSqr(box[1]) < searchRadius ^ 2 then
+					render.DrawWireframeBox(box[1], box[2], box[3], box[4], whiteColor, true)
+				end
 			end
-			render.DrawSphere(
-				panelState.selectionCenter,
-				(1 - math.ease.InExpo(panelState.selectionAlpha / MAX_SELECTION_ALPHA)) * panelState.searchRadius,
-				10,
-				10,
-				selectionColor
-			)
+			render.DrawSphere(panelState.selectionCenter, searchRadius, 10, 10, selectionColor)
 			panelState.selectionAlpha = panelState.selectionAlpha - 0.5
 			selectionColor.a = math.ease.InExpo(panelState.selectionAlpha / MAX_SELECTION_ALPHA) * MAX_SELECTION_ALPHA
 			whiteColor.a = math.ease.InExpo(panelState.selectionAlpha / MAX_SELECTION_ALPHA) * MAX_SELECTION_ALPHA
