@@ -86,6 +86,7 @@ end
 function ui.ConstructPanel(cPanel, panelProps)
 	local modelCategory = makeCategory(cPanel, "#ui.modelsniper.model", "DForm")
 	modelCategory:Help("#ui.modelsniper.model.list")
+	modelCategory:Help("#ui.modelsniper.model.shortcuts")
 
 	local modelList = vgui.Create("DTextEntry", cPanel)
 	modelCategory:AddItem(modelList)
@@ -97,6 +98,7 @@ function ui.ConstructPanel(cPanel, panelProps)
 	modelList:SetMultiline(true)
 	modelList:SetAllowNonAsciiCharacters(true)
 	modelList:SetEnterAllowed(false)
+	modelList:SetUpdateOnType(true)
 
 	local maxSpawns = GetConVar("modelsniper_maxspawns"):GetInt()
 
@@ -298,6 +300,64 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 
 		hook.Call("OnTextEntryLoseFocus", nil, self)
 		updateGallery(modelList:GetValue())
+	end
+
+	local function updateModelList(newText)
+		modelList:SetText(newText)
+		modelList:OnValueChange(newText)
+	end
+
+	function modelList:OnKeyCode(code)
+		local textArray = string.Split(self:GetValue(), "\n")
+		local oldPos = self:GetCaretPos()
+		-- As of 26 January 2025, there isn't an official way to get current selected line. This does it for us
+		local _, currentLine = string.gsub(string.Left(self:GetValue(), oldPos), "\n", "")
+		currentLine = currentLine + 1
+		if input.IsKeyDown(KEY_LCONTROL) then
+			if code == KEY_C or code == KEY_X then
+				SetClipboardText(textArray[currentLine] .. "\n")
+			end
+			if code == KEY_X then
+				local linePos = 0
+				for i = 1, currentLine - 1 do
+					linePos = linePos + #textArray[i] + 1
+				end
+				table.remove(textArray, currentLine)
+				local newText = table.concat(textArray, "\n")
+				updateModelList(newText)
+
+				self:SetCaretPos(linePos)
+			end
+		elseif input.IsKeyDown(KEY_LALT) then
+			if code == KEY_UP or code == KEY_DOWN then
+				local direction = code == KEY_UP and -1 or 1
+				local nextLine = math.Clamp(currentLine + direction, 1, #textArray)
+				local temp = textArray[currentLine]
+				if input.IsShiftDown() then
+					table.insert(textArray, direction < 0 and nextLine + 1 or nextLine, temp)
+				else
+					textArray[currentLine] = textArray[nextLine]
+					textArray[nextLine] = temp
+				end
+
+				-- SetText resets the `CaretPos`
+				-- Therefore, we attempt to preserve the original caret position with respect to the old line
+				-- This isn't the usual way to preserve them, but it gets us that VSCode behavior
+				local isLarger = #textArray[currentLine] > #temp
+				local caretDisplacement = direction * math.min(#temp, #textArray[currentLine]) + direction
+				if isLarger then
+					caretDisplacement = caretDisplacement + direction * math.abs(#textArray[currentLine] - #temp)
+				end
+				local newText = table.concat(textArray, "\n")
+				updateModelList(newText)
+
+				if input.IsShiftDown() and direction < 0 then
+					caretDisplacement = 0
+				end
+				self:SetCaretPos(oldPos + caretDisplacement)
+			end
+		end
+		-- print(textArray[currentLine])
 	end
 
 	function modelList:OnValueChange(newValue)

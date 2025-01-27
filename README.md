@@ -21,6 +21,7 @@ This adds a spawner tool, "Model Sniper", which allows the player to spawn multi
 - Editable entry to specify a list of models for spawning, and a model gallery which displays the icons of these models
   - Models from the gallery can also be spawned by clicking on them, just like the regular spawnmenu.
   - Right-clicking on a model icon brings up a menu to copy its path or view its folder if it has other models
+  - VSCode-like line manipulation such as moving, duplicating, copying, or cutting lines
 - Model picking, which either appends the selected entity's model to the list, or appends a collection of entities together
   - Also supports getting bonemerged models
   - Includes settings for visualizing or modifying the search volume
