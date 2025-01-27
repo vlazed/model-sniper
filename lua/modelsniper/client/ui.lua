@@ -313,7 +313,9 @@ function ui.HookPanel(panelChildren, panelProps, panelState)
 		-- As of 26 January 2025, there isn't an official way to get current selected line. This does it for us
 		local _, currentLine = string.gsub(string.Left(self:GetValue(), oldPos), "\n", "")
 		currentLine = currentLine + 1
-		if input.IsKeyDown(KEY_LCONTROL) then
+		-- For copying/cutting single lines, we require shift key, so we don't override
+		-- old copying behavior
+		if input.IsKeyDown(KEY_LCONTROL) and input.IsKeyDown(KEY_LSHIFT) then
 			if code == KEY_C or code == KEY_X then
 				SetClipboardText(textArray[currentLine] .. "\n")
 			end
