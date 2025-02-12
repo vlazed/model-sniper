@@ -136,6 +136,9 @@ function ui.ConstructPanel(cPanel, panelProps)
 	filterDuplicates:SetTooltip("#ui.modelsniper.filters.duplicates.tooltip")
 
 	local spawning = makeCategory(settings, "#ui.modelsniper.spawn", "DForm")
+	local spawnGroup = spawning:CheckBox("#ui.modelsniper.spawn.group", "modelsniper_spawngroup")
+	spawnGroup:SetTooltip("#ui.modelsniper.spawn.group.tooltip")
+	spawnGroup:Dock(TOP)
 	local spawnShape = spawning:ComboBox("#ui.modelsniper.spawn.shape", "modelsniper_spawnshape")
 	---@cast spawnShape DComboBox
 	for shapeName, _ in pairs(shapes.toInt) do
@@ -165,6 +168,7 @@ function ui.ConstructPanel(cPanel, panelProps)
 		filterProps = filterProps,
 		filterPlayers = filterPlayers,
 		modelCount = modelCount,
+		spawnGroup = spawnGroup,
 		spawnShape = spawnShape,
 		spawnRadius = spawnRadius,
 	}

@@ -13,6 +13,7 @@ TOOL.ClientConVar["filterplayers"] = 0
 
 TOOL.ClientConVar["spawnradius"] = 4
 TOOL.ClientConVar["spawnshape"] = "Circle"
+TOOL.ClientConVar["spawngroup"] = 1
 
 local shouldRebuild = true
 function TOOL:Think()
@@ -80,6 +81,7 @@ if SERVER then
 			return
 		end
 
+		---@type SpawnedEntityInfo[]
 		local filter = {}
 		for i, model in ipairs(modelList) do
 			if not util.IsValidModel(model) then
@@ -92,7 +94,30 @@ if SERVER then
 				continue
 			end
 
-			table.insert(filter, spawn(ply, model, i, spawnRadius, shapes.toShape[spawnShapeIndex], spawns, filter)) ---@diagnostic disable-line
+			local spawnedEntity, entityType =
+				spawn(ply, model, i, spawnRadius, shapes.toShape[spawnShapeIndex], spawns, filter)
+
+			table.insert(filter, { spawnedEntity, entityType }) ---@diagnostic disable-line
+		end
+
+		local willSpawnGroup = tonumber(ply:GetInfo("modelsniper_spawngroup")) > 0
+
+		if willSpawnGroup and #filter > 1 then
+			undo.Create("Model Group")
+		end
+		for _, entityInfo in ipairs(filter) do
+			local modelName = string.GetFileFromFilename(entityInfo[1]:GetModel())
+			if not willSpawnGroup or #filter == 1 then
+				undo.Create(Format("%s: %s", entityInfo[2], modelName))
+			end
+			undo.SetPlayer(ply)
+			undo.AddEntity(entityInfo[1])
+			if not willSpawnGroup or #filter == 1 then
+				undo.Finish(Format("Spawned %s: %s", entityInfo[2], modelName))
+			end
+		end
+		if willSpawnGroup and #filter > 1 then
+			undo.Finish("Spawned model group")
 		end
 	end)
 	return

@@ -5,6 +5,9 @@
 
 ---@alias SelectionBox {[1]: Vector, [2]: Angle, [3]: Vector, [4]: Vector}
 
+---@alias EntityType "Physics Prop" | "Entity" | "Effect"
+---@alias SpawnedEntityInfo {[1]: Entity, [2]: EntityType}
+
 ---Immutable properties
 ---@class PanelProps
 
@@ -34,5 +37,6 @@
 ---@field filterPlayers DCheckBoxLabel
 ---@field filterProps DCheckBoxLabel
 ---@field modelCount DLabel
+---@field spawnGroup DComboBox
 ---@field spawnRadius DNumSlider
 ---@field spawnShape DComboBox
