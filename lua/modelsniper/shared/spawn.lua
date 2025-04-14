@@ -208,7 +208,7 @@ local function GMODSpawnRagdoll(ply, model, iSkin, strBody, index, radius, shape
 	return e, "Ragdoll"
 end
 
----https://github.com/Facepunch/garrysmod/blob/ee0b187dc1eadfbe456d86d6d6f030e87e074cf4/garrysmod/gamemodes/sandbox/gamemode/commands.lua#L261
+---@source https://github.com/Facepunch/garrysmod/blob/ee0b187dc1eadfbe456d86d6d6f030e87e074cf4/garrysmod/gamemodes/sandbox/gamemode/commands.lua#L261
 ---@param ply Player
 ---@param model string
 ---@param iSkin integer

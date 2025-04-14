@@ -82,7 +82,7 @@ end
 
 ---@param cPanel DForm|ControlPanel
 ---@param panelProps PanelProps
----@return table
+---@return PanelChildren
 function ui.ConstructPanel(cPanel, panelProps)
 	local modelCategory = makeCategory(cPanel, "#ui.modelsniper.model", "DForm")
 	modelCategory:Help("#ui.modelsniper.model.list")
