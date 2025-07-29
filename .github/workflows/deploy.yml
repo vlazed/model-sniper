@@ -1,0 +1,25 @@
+name: Deploy to Workshop
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: project
+      - name: Upload to Workshop
+        uses: CFC-Servers/gmod-upload@master
+        with:
+          id: 3537479192
+          changelog: "Deployment via Github to latest changes"
+          title: "Model Sniper"
+          type: "tool"
+          tag1: "build"
+        env:
+          STEAM_USERNAME: ${{ secrets.STEAM_USERNAME }}
+          STEAM_PASSWORD: ${{ secrets.STEAM_PASSWORD }}
