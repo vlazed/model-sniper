@@ -46,6 +46,11 @@ function TOOL:RightClick(tr)
 	end
 
 	local entity = tr.Entity
+	---@diagnostic disable: undefined-field
+	if IsValid(entity.AttachedEntity) then
+		entity = entity.AttachedEntity
+	end
+	---@diagnostic enable
 	if IsValid(entity) and entity:GetBrushPlaneCount() == 0 then
 		net.Start("modelsniper_append", false)
 		net.WriteEntity(entity)
